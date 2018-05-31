@@ -1,11 +1,8 @@
 #!/usr/bin/env python
-#
-# Usage:
-# xspfy.py XSPF_DIR_PATH SPOTIFY_USERNAME
 
-import xspfparser
 import spotipy
 import spotipy.util
+import codecs
 import urllib
 import glob
 import sys
@@ -86,32 +83,11 @@ def spotify_auth_token(username, auth_scope, client_key, client_secret, redirect
     return spotipy.util.prompt_for_user_token(username, auth_scope, client_key, client_secret, redirect_uri)
 
 
-def xspf_playlist_paths(path):
-    '''
-    Reads a path and scans found XSPF playlists. Returns an array of XSPF paths.
-    '''
-    if os.path.isdir(path):
-        return glob.glob(path + '/*.xspf')
-
-    return [path]
-
-
-def xspf_parse(path):
-    '''
-    Parse a single XSPF filepath into an array of ['artist', 'track'].
-    '''
-    pl = xspfparser.parse(path)
-
-    if pl.bozo:
-        return False
-
-    return pl.playlist
-
-
 class Playlist(object):
     '''
     its a playlist
     '''
+
 
 class Track(object):
     '''
@@ -121,25 +97,12 @@ class Track(object):
 
 def txt_parse(path):
     '''
-    Parse a text file into an array of ['artist', 'track'].
+    Parse a text file into a playlist object
     '''
-
-
     playlist = Playlist()
     playlist.title = '.'.join(path.split('/')[-1].split('.')[:-1])  # filename cleaned
     playlist.track = []
-
-
-    # import codecs
-    # f = codecs.open(path, encoding='utf-8')
-    # f.seek(0)
-    # print repr(f.readline()[:1])
-    # f.close()
-
-
-    import codecs
-
-    with codecs.open(path, encoding='utf-16') as f:
+    with codecs.open(path, encoding='utf-8') as f:
         lines = f.read().splitlines()
         for line in lines[1:]:
             try:
@@ -165,12 +128,12 @@ def clean_bad_chars(input):
     clean = clean.replace(')', '')
     clean = clean.replace('[', '')
     clean = clean.replace(']', '')
-    # clean = clean.replace(',', ' ')
-    # clean = clean.replace('.', ' ')
     clean = clean.replace('&', ', ')
-    # clean = clean.replace("'", '')
-    clean = ' '.join(clean.split())  # consolidate spaces last
     return clean
+
+
+def consolidate_spaces(clean):
+    return ' '.join(clean.split())
 
 
 def clean_features(input):
@@ -184,8 +147,8 @@ def clean_features(input):
 def clean_track_name(track_name):
     clean = clean_bad_chars(track_name)
     clean = clean_features(clean)
+    clean = consolidate_spaces(clean)
     return clean
-
 
 
 def clean_artist(artist):
@@ -193,6 +156,7 @@ def clean_artist(artist):
     clean = clean_features(clean)
     if ',' in clean:
         clean = clean.split(',')[0]
+    clean = consolidate_spaces(clean)
     return clean
 
 
@@ -201,24 +165,21 @@ def main():
     # Check args, init
     # -------------------------------------------------------------------------
     if len(sys.argv) < 3:
-        sys.exit('\nUSAGE: xspfy.py XSPF_PATH SPOTIFY_USERNAME\n')
+        sys.exit('\nUSAGE: spotify_import.py SPOTIFY_USERNAME FILE_PATH\n')
     else:
-        xspf_path    = sys.argv[2]
+        filepath    = sys.argv[2]
         spotify_user = sys.argv[1].lower()
 
     print '\nConnecting to Spotify API endpoint, authorizing as "%s"...' % spotify_user
-
     token = spotify_auth_token(spotify_user, SPOTIFY_AUTH_SCOPE, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI)
 
-    os.chdir(xspf_path)
-    for file in glob.glob("*.txt"):
-        process(file, token, spotify_user)
+    process(filepath, token, spotify_user)
 
 
-def process(xspf_path, token, spotify_user):
-    print '\nProcessing "%s"...' % xspf_path
+def process(filepath, token, spotify_user):
+    print '\nProcessing "%s"...' % filepath
 
-    pl = txt_parse(xspf_path)
+    pl = txt_parse(filepath)
 
     failed = count = 0
     pl_len = len(pl.track)
@@ -244,7 +205,6 @@ def process(xspf_path, token, spotify_user):
         else:
             print '\t[FAILED]\n'
             failed += 1
-            sys.exit(failed)
 
     spotify_pls.extend([spotify_pl])
 
@@ -263,8 +223,6 @@ def process(xspf_path, token, spotify_user):
         return
 
     print '[SUCCESS] Enjoy!'
-
-    os.unlink(xspf_path)
 
 
 if __name__ == '__main__':
