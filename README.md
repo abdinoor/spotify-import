@@ -1,4 +1,4 @@
-#Spotify Import
+# Spotify Import
 
 Migrates iTunes txt playlists to Spotify.
 
@@ -12,10 +12,10 @@ Should work with any txt file as long as the format follows:
 - column 4 is album name
 
 
-###Usage
+### Usage
 `python xspfy.py SPOTIFY_USER_ID TXT_PATH `
 
-###Installation
+### Installation
     pip install requests spotipy
     git clone https://github.com/abdinoor/spotify-import.git
     python import.py
