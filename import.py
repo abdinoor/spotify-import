@@ -165,7 +165,7 @@ def main():
     # Check args, init
     # -------------------------------------------------------------------------
     if len(sys.argv) < 3:
-        sys.exit('\nUSAGE: spotify_import.py SPOTIFY_USERNAME FILE_PATH\n')
+        sys.exit('\nUSAGE: import.py SPOTIFY_USERNAME PLAYLIST_FILE\n')
     else:
         filepath    = sys.argv[2]
         spotify_user = sys.argv[1].lower()
